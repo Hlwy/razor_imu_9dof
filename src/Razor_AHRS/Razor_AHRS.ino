@@ -195,6 +195,12 @@
   The status LED will be on if streaming output is enabled and off otherwise.
   
   Byte order of binary output is little-endian: least significant byte comes first.
+
+  -259.64/257.32  -285.89/265.50  -286.62/257.08
+  -181.55/792.20  -1036.76/-57.01  -1213.80/-235.56
+  -0.00/-0.00  0.00/0.00  0.00/0.00
+
+
 */
 
 
@@ -208,7 +214,7 @@
 // Select your hardware here by uncommenting one line!
 //#define HW__VERSION_CODE 10125 // SparkFun "9DOF Razor IMU" version "SEN-10125" (HMC5843 magnetometer)
 //#define HW__VERSION_CODE 10736 // SparkFun "9DOF Razor IMU" version "SEN-10736" (HMC5883L magnetometer)
-//#define HW__VERSION_CODE 14001 // SparkFun "9DoF Razor IMU M0" version "SEN-14001"
+#define HW__VERSION_CODE 14001 // SparkFun "9DoF Razor IMU M0" version "SEN-14001"
 //#define HW__VERSION_CODE 10183 // SparkFun "9DOF Sensor Stick" version "SEN-10183" (HMC5843 magnetometer)
 //#define HW__VERSION_CODE 10321 // SparkFun "9DOF Sensor Stick" version "SEN-10321" (HMC5843 magnetometer)
 //#define HW__VERSION_CODE 10724 // SparkFun "9DOF Sensor Stick" version "SEN-10724" (HMC5883L magnetometer)
@@ -272,27 +278,27 @@ boolean output_errors = false;  // true or false
 // For the M0, only the extended magnetometer calibration seems to be really necessary if DEBUG__USE_DMP_M0 is set to true...
 // Accelerometer
 // "accel x,y,z (min/max) = X_MIN/X_MAX  Y_MIN/Y_MAX  Z_MIN/Z_MAX"
-float ACCEL_X_MIN = -250;
-float ACCEL_X_MAX = 250;
-float ACCEL_Y_MIN = -250;
-float ACCEL_Y_MAX = 250;
-float ACCEL_Z_MIN = -250;
-float ACCEL_Z_MAX = 250;
+float ACCEL_X_MIN = -259.64;
+float ACCEL_X_MAX = 257.32;
+float ACCEL_Y_MIN = -285.89;
+float ACCEL_Y_MAX = 265.50;
+float ACCEL_Z_MIN = -286.62;
+float ACCEL_Z_MAX = 257.08;
 
 // Magnetometer (standard calibration mode)
 // "magn x,y,z (min/max) = X_MIN/X_MAX  Y_MIN/Y_MAX  Z_MIN/Z_MAX"
-float MAGN_X_MIN = -600;
-float MAGN_X_MAX = 600;
-float MAGN_Y_MIN = -600;
-float MAGN_Y_MAX = 600;
-float MAGN_Z_MIN = -600;
-float MAGN_Z_MAX = 600;
+float MAGN_X_MIN = -181.55;
+float MAGN_X_MAX = 792.20;
+float MAGN_Y_MIN = -1036.76;
+float MAGN_Y_MAX = -57.01;
+float MAGN_Z_MIN = -1213.80;
+float MAGN_Z_MAX = -235.56;
 
 // Magnetometer (extended calibration mode)
 // Set to true to use extended magnetometer calibration (compensates hard & soft iron errors)
-boolean CALIBRATION__MAGN_USE_EXTENDED = false;
-float magn_ellipsoid_center[3] = {0, 0, 0};
-float magn_ellipsoid_transform[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+boolean CALIBRATION__MAGN_USE_EXTENDED = true;
+float magn_ellipsoid_center[3] = {-1280.43, -115.374, -4563.19};
+float magn_ellipsoid_transform[3][3] = {{0.710741, -0.0509902, 0.0541763}, {-0.0509902, 0.430888, -0.109188}, {0.0541763, -0.109188, 0.964682}};
 
 // Gyroscope
 // "gyro x,y,z (current/average) = .../OFFSET_X  .../OFFSET_Y  .../OFFSET_Z
@@ -349,7 +355,7 @@ boolean DEBUG__NO_DRIFT_CORRECTION = false;
 
 #define DEBUG__LOOP_DELAY 1
 // Set to true to enable auto-calibration features of the M0 (does not apply to magnetometers)
-#define DEBUG__USE_DMP_M0 false
+#define DEBUG__USE_DMP_M0 true
 // Set to true to disable the use of the DCM algorithm
 #define DEBUG__USE_ONLY_DMP_M0 false
 

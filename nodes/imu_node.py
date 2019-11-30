@@ -32,10 +32,12 @@ import serial
 import string
 import math
 import sys
+import tf
 
 #from time import time
-from sensor_msgs.msg import Imu
-from tf.transformations import quaternion_from_euler
+from sensor_msgs.msg import Imu, MagneticField
+from geometry_msgs.msg import Pose, PoseStamped
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from dynamic_reconfigure.server import Server
 from razor_imu_9dof.cfg import imuConfig
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
@@ -54,12 +56,18 @@ def reconfig_callback(config, level):
 
 rospy.init_node("razor_node")
 #We only care about the most recent measurement, i.e. queue_size=1
-pub = rospy.Publisher('imu', Imu, queue_size=1)
+pub = rospy.Publisher('imu/data/raw', Imu, queue_size=1)
+magpub = rospy.Publisher('imu/mag', MagneticField, queue_size=1)
+posepub = rospy.Publisher('imu/pose/raw', PoseStamped, queue_size=1)
 srv = Server(imuConfig, reconfig_callback)  # define dynamic_reconfigure callback
 diag_pub = rospy.Publisher('diagnostics', DiagnosticArray, queue_size=1)
 diag_pub_time = rospy.get_time();
 
+br = tf.TransformBroadcaster()
+
 imuMsg = Imu()
+magMsg = MagneticField()
+poseMsg = PoseStamped()
 
 # Orientation covariance estimation:
 # Observed orientation noise: 0.3 degrees in x, y, 0.6 degrees in z
@@ -95,6 +103,12 @@ imuMsg.linear_acceleration_covariance = [
 0.04 , 0 , 0,
 0 , 0.04, 0,
 0 , 0 , 0.04
+]
+
+magMsg.magnetic_field_covariance = [
+0.0, 0 , 0,
+0 , 0.0, 0,
+0 , 0 , 0.0
 ]
 
 default_port='/dev/ttyUSB0'
@@ -158,7 +172,7 @@ ser.write('#o0' + chr(13))
 #automatic flush - NOT WORKING
 #ser.flushInput()  #discard old input, still in invalid format
 #flush manually, as above command is not working
-discard = ser.readlines() 
+discard = ser.readlines()
 
 #set output mode
 ser.write('#ox' + chr(13)) # To start display angle and sensor reading in text
@@ -220,7 +234,8 @@ rospy.loginfo("Publishing IMU data...")
 
 while not rospy.is_shutdown():
     line = ser.readline()
-    line = line.replace("#YPRAG=","")   # Delete "#YPRAG="
+    # line = line.replace("#YPRAG=","")   # Delete "#YPRAG="
+    line = line.replace("#YPRAGM=","")   # Delete "#YPRAG="
     #f.write(line)                     # Write to the output log file
     words = string.split(line,",")    # Fields split
     if len(words) > 2:
@@ -246,8 +261,17 @@ while not rospy.is_shutdown():
         imuMsg.angular_velocity.x = float(words[6])
         #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
         imuMsg.angular_velocity.y = -float(words[7])
-        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103) 
+        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103)
         imuMsg.angular_velocity.z = -float(words[8])
+        # if imu is flashed to output magnetometer data as well publish to separate topic
+        if(len(words) > 9):
+            magMsg.magnetic_field.x = float(words[9]) / 1000.0
+            magMsg.magnetic_field.y = float(words[10]) / 1000.0
+            magMsg.magnetic_field.z = float(words[11]) / 1000.0
+        else:
+            magMsg.magnetic_field.x = float('nan')
+            magMsg.magnetic_field.y = float('nan')
+            magMsg.magnetic_field.z = float('nan')
 
     q = quaternion_from_euler(roll,pitch,yaw)
     imuMsg.orientation.x = q[0]
@@ -255,11 +279,17 @@ while not rospy.is_shutdown():
     imuMsg.orientation.z = q[2]
     imuMsg.orientation.w = q[3]
     imuMsg.header.stamp= rospy.Time.now()
-    imuMsg.header.frame_id = 'base_imu_link'
+    imuMsg.header.frame_id = 'imu_link'
     imuMsg.header.seq = seq
+    magMsg.header = imuMsg.header
+    poseMsg.header = imuMsg.header
+    poseMsg.pose.position.x = poseMsg.pose.position.y = poseMsg.pose.position.z = 0.0
+    poseMsg.pose.orientation = imuMsg.orientation
     seq = seq + 1
     pub.publish(imuMsg)
-
+    magpub.publish(magMsg)
+    posepub.publish(poseMsg)
+    # br.sendTransform((0,0,0), tf.transformations.quaternion_from_euler(roll,pitch,yaw), imuMsg.header.stamp, 'imu_link','imu_frame')
     if (diag_pub_time < rospy.get_time()) :
         diag_pub_time += 1
         diag_arr = DiagnosticArray()
@@ -278,6 +308,6 @@ while not rospy.is_shutdown():
         diag_msg.values.append(KeyValue('sequence number', str(seq)))
         diag_arr.status.append(diag_msg)
         diag_pub.publish(diag_arr)
-        
+
 ser.close
 #f.close

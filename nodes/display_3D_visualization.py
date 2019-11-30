@@ -95,7 +95,7 @@ angVelLabel = label(pos=(0,-0.88,0),text="-",box=0,opacity=0,height=12)
 # Main scene objects
 scene.select()
 # Reference axis (x,y,z) - using ROS conventions (REP 103) - z is up, y left (west, 90 deg), x is forward (north, 0 deg)
-# In visual, z runs up, x runs forward, y runs left (see scene.up command earlier) 
+# In visual, z runs up, x runs forward, y runs left (see scene.up command earlier)
 # So everything is good
 arrow(color=color.green,axis=(1,0,0), shaftwidth=0.04, fixedwidth=1)
 arrow(color=color.green,axis=(0,1,0), shaftwidth=0.04 , fixedwidth=1)
@@ -130,7 +130,7 @@ def processIMU_message(imuMsg):
     #add align offset to yaw
     yaw += yaw_offset
 
-    axis=(-cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch)) 
+    axis=(-cos(pitch)*cos(yaw),-cos(pitch)*sin(yaw),sin(pitch))
     up=(sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw),-sin(roll)*cos(yaw)+cos(roll)*sin(pitch)*sin(yaw),cos(roll)*cos(pitch))
     platform.axis=axis
     platform.up=up
@@ -149,7 +149,7 @@ def processIMU_message(imuMsg):
     cil_pitch.axis=(0,-0.4*sin(pitch),-0.4*cos(pitch))
     #remove yaw_offset from yaw display
     arrow_course.axis=(-0.2*sin(yaw-yaw_offset),0.2*cos(yaw-yaw_offset),0)
-    
+
     #display in degrees / radians
     rollLabel.text = str(round(roll*rad2degrees, precision)) + " / " + str(round(roll,precision))
     pitchLabel.text = str(round(pitch*rad2degrees, precision)) + " / " + str(round(pitch, precision))
